@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	cache "github.com/mihailtudos/cachey"
+	"github.com/mihailtudos/cachey/cache"
 )
 
 func TestCache(t *testing.T) {
