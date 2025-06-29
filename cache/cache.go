@@ -1,20 +1,58 @@
 package cache
 
-type Cache map[string]any
+import (
+	"sync"
+	"time"
+)
 
-func New() Cache {
-	return Cache(make(map[string]any))
+type Cache struct {
+	mu    *sync.Mutex
+	store map[string]CacheItem
 }
 
-func (c Cache) Set(key string, value any) {
-	c[key] = value
+type CacheItem struct {
+	value     any
+	ttl       time.Duration
+	createdAt time.Time
 }
 
-func (c Cache) Get(key string) (any, bool) {
-	v, ok := c[key]
-	return v, ok
+func New() *Cache {
+	return &Cache{
+		store: make(map[string]CacheItem),
+		mu:    new(sync.Mutex),
+	}
+}
+
+func (c *Cache) Set(key string, value any, ttl time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.store[key] = CacheItem{
+		value:     value,
+		ttl:       ttl,
+		createdAt: time.Now(),
+	}
+}
+
+func (c *Cache) Get(key string) (any, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	v, ok := c.store[key]
+	if !ok {
+		return nil, false
+	}
+
+	if time.Now().After(v.createdAt.Add(v.ttl)) {
+		delete(c.store, key)
+		return nil, false
+	}
+
+	return v.value, ok
 }
 
 func (c Cache) Delete(key string) {
-	delete(c, key)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	delete(c.store, key)
 }

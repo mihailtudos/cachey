@@ -3,6 +3,7 @@ package cache_test
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/mihailtudos/cachey/cache"
 )
@@ -14,13 +15,18 @@ func TestCache(t *testing.T) {
 
 	t.Run("Create new cache", func(t *testing.T) {
 		tp := reflect.TypeOf(c)
-		if tp.Kind() != reflect.Map {
+		if tp.Kind() != reflect.Ptr {
+			t.Fatal("returned type must be a pointer")
+		}
+
+		expectedType := reflect.TypeOf((*cache.Cache)(nil))
+		if tp != expectedType {
 			t.Fatal("returned type must be a map")
 		}
 	})
 
 	t.Run("Set and check value exists", func(t *testing.T) {
-		c.Set(key, value)
+		c.Set(key, value, time.Second*10)
 		v, ok := c.Get(key)
 		if !ok {
 			t.Fatalf("expected true got: %v", ok)
